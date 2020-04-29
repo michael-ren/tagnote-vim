@@ -19,15 +19,42 @@
 command -nargs=* WriteAsDate :call WriteAsDate(<f-args>)
 command -nargs=* AddTagAsDate :call AddTagAsDate(<f-args>)
 
-if (!exists("g:TagnoteNotesDirectory"))
-  let g:TagnoteNotesDirectory = simplify($HOME . '/notes')
+if (exists("g:TagnoteConfigFile"))
+  let g:TagnoteConfigFile = simplify(expand(g:TagnoteConfigFile))
+else
+  let g:TagnoteConfigFile = simplify($HOME . '/.tag.config.json')
 endif
 
-if (!exists("g:TagnoteUtc"))
-  let g:TagnoteUtc = 0
-endif
+function s:get_config_value(config, name, default)
+  " Return configuration value or default
+  " If configuration is not readable, return the default
+  if ! filereadable(a:config)
+    return a:default
+  endif
+  let l:result = system(
+    \'python3 -c "import json; import sys; print(json.load(open(sys.argv[1])).get(sys.argv[2]))"'
+    \. ' ' . shellescape(a:config) . ' ' . shellescape(a:name)
+    \)
+  let l:result = substitute(l:result, '\n\+$', '', '')
+  if v:shell_error || l:result ==# 'None'
+    return a:default
+  elseif l:result ==# 'True'
+    return 1
+  elseif l:result ==# 'False'
+    return 0
+  else
+    return l:result
+  endif
+endfunction
 
-let TAGNOTE_NOTE_REGEX = '[0-9]\{4}-[0-9]\{2}-[0-9]\{2}_[0-9]\{2}-[0-9]\{2}-[0-9]\{2}.txt'
+let s:TagnoteNotesDirectory = simplify($HOME . '/' . s:get_config_value(
+    \g:TagnoteConfigFile, 'notes_directory', 'notes'
+    \)
+  \)
+
+let s:TagnoteUtc = s:get_config_value(g:TagnoteConfigFile, 'utc', 0)
+
+let s:TAGNOTE_NOTE_REGEX = '[0-9]\{4}-[0-9]\{2}-[0-9]\{2}_[0-9]\{2}-[0-9]\{2}-[0-9]\{2}.txt'
 
 
 function s:run_with_error_output(command, error)
@@ -39,19 +66,23 @@ function s:run_with_error_output(command, error)
 endfunction
 
 function s:is_note(directory, file)
-  return a:directory == g:TagnoteNotesDirectory
-      \ && a:file =~ '^' . g:TAGNOTE_NOTE_REGEX . '$'
+  return a:directory ==# s:TagnoteNotesDirectory
+      \ && a:file =~ '^' . s:TAGNOTE_NOTE_REGEX . '$'
 endfunction
 
 function WriteAsDate(...)
-  if g:TagnoteUtc
-    let filename = system('date -u +%F_%H-%M-%S.txt')
-    if v:shell_error
-      echo "Could not get timestamp\n\n" . l:filename
-      return v:shell_error
-    endif
+  if s:TagnoteUtc
+    let filename = system(
+      \'python3 -c "import datetime; print(datetime.datetime.now(datetime.timezone.utc).strftime(''%Y-%m-%d_%H-%M-%S.txt''))"'
+      \)
   else
-    let filename = strftime('%F_%H-%M-%S.txt')
+    let filename = system(
+      \'python3 -c "import datetime; print(datetime.datetime.now().strftime(''%Y-%m-%d_%H-%M-%S.txt''))"'
+      \)
+  endif
+  if v:shell_error
+    echo "Could not get timestamp\n\n" . l:filename
+    return v:shell_error
   endif
 
   let old_directory = simplify(expand('%:p:h'))
@@ -67,7 +98,7 @@ function WriteAsDate(...)
     let tags = l:tags . ' ' . shellescape(l:arg)
   endfor
 
-  execute 'saveas ' . g:TagnoteNotesDirectory . '/' . l:filename
+  execute 'saveas ' . s:TagnoteNotesDirectory . '/' . l:filename
   return s:run_with_error_output(
     \'tag -r :0 add ' . l:prototype . ' ' . l:filename . l:tags,
     \"Could not add note\n\n"

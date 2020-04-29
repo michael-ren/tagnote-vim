@@ -362,15 +362,27 @@ ul.auto-toc {
 <body>
 <div class="document" id="tagnote-vim-plugin-minimalist-note-organization">
 <h1 class="title">Tagnote Vim Plugin: Minimalist Note Organization</h1>
-<h2 class="subtitle" id="installation">Installation</h2>
 
+<div class="section" id="installation">
+<h1>Installation</h1>
 <p>On Vim 8 and later, install the package:</p>
 <pre class="literal-block">
 cd ~/.vim/pack/plugins/start
 git clone https://github.com/michael-ren/tagnote-vim.git
 </pre>
 <p>For earlier versions of vim, copy <cite>plugin/tagnote.vim</cite> to <cite>~/.vim/plugin/tagnote.vim</cite>, creating the <cite>plugin/</cite> directory if needed.</p>
-<p>This plugin requires the base Tagnote program to function. See the <a class="reference external" href="https://github.com/michael-ren/tagnote">repository</a> for installation instructions.</p>
+<p>This plugin requires the base Tagnote program to function. See the <a class="reference external" href="https://githbub.com/michael-ren/tagnote">repository</a> for installation instructions.</p>
+</div>
+<div class="section" id="configuration">
+<h1>Configuration</h1>
+<p>By default, the configuration file is <cite>~/.tag.config.json</cite>, which is also the default of the main Tagnote program.</p>
+<p>Although not recommended, to change the configuration file location, in your <cite>.vimrc</cite>, add:</p>
+<pre class="literal-block">
+let g:TagnoteConfigurationFile = '~/.tagnote.json'
+</pre>
+<p>Remember to also invoke <cite>tag</cite> with the correct <cite>-c</cite> value.</p>
+<p>The vim plugin respects settings from the main Tagnote configuration file. See the <a class="reference external" href="https://githbub.com/michael-ren/tagnote">repository</a> for more details.</p>
+</div>
 </div>
 </body>
 </html>
